@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Meeting Transcriber</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .control-panel h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .transcript-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .transcript-panel h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .transcript-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            min-height: 400px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .insights-panel {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            margin-top: 20px;
+        }
+        
+        .insights-panel h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .insight-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .insight-card h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .insight-list {
+            list-style: none;
+        }
+        
+        .insight-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .insight-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Meeting Transcriber</h1>
+            <p>Real-time transcription, analysis, and conversation guidance for your meetings</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h2>Meeting Controls</h2>
+                
+                <div id="connectionStatus" class="status disconnected">
+                    Disconnected
+                </div>
+                
+                <div class="form-group">
+                    <label for="meetingId">Meeting ID:</label>
+                    <input type="text" id="meetingId" placeholder="Enter Zoom Meeting ID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="meetingPassword">Password (optional):</label>
+                    <input type="password" id="meetingPassword" placeholder="Meeting password">
+                </div>
+                
+                <button id="joinBtn" class="btn">Join Meeting</button>
+                <button id="leaveBtn" class="btn btn-danger" disabled>Leave Meeting</button>
+                
+                <div style="margin-top: 20px;">
+                    <button id="getTranscriptBtn" class="btn">Get Transcript</button>
+                    <button id="getSummaryBtn" class="btn">Get Summary</button>
+                </div>
+            </div>
+            
+            <div class="transcript-panel">
+                <h2>Live Transcript</h2>
+                <div id="transcriptContent" class="transcript-content">
+                    <p class="timestamp">Waiting for meeting to start...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="insights-panel">
+            <h2>AI Insights & Guidance</h2>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h3>🎯 Important Points</h3>
+                    <ul id="importantPoints" class="insight-list">
+                        <li>No important points identified yet</li>
+                    </ul>
+                </div>
+                
+                <div class="insight-card">
+                    <h3>❓ Suggested Questions</h3>
+                    <ul id="suggestedQuestions" class="insight-list">
+                        <li>No questions suggested yet</li>
+                    </ul>
+                </div>
+                
+                <div class="insight-card">
+                    <h3>📋 Action Items</h3>
+                    <ul id="actionItems" class="insight-list">
+                        <li>No action items identified yet</li>
+                    </ul>
+                </div>
+                
+                <div class="insight-card">
+                    <h3>💡 Conversation Guidance</h3>
+                    <ul id="conversationGuidance" class="insight-list">
+                        <li>No guidance available yet</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MeetingTranscriber {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.currentMeetingId = null;
+                this.initializeElements();
+                this.attachEventListeners();
+            }
+            
+            initializeElements() {
+                this.statusEl = document.getElementById('connectionStatus');
+                this.meetingIdEl = document.getElementById('meetingId');
+                this.meetingPasswordEl = document.getElementById('meetingPassword');
+                this.joinBtn = document.getElementById('joinBtn');
+                this.leaveBtn = document.getElementById('leaveBtn');
+                this.getTranscriptBtn = document.getElementById('getTranscriptBtn');
+                this.getSummaryBtn = document.getElementById('getSummaryBtn');
+                this.transcriptContent = document.getElementById('transcriptContent');
+                this.importantPoints = document.getElementById('importantPoints');
+                this.suggestedQuestions = document.getElementById('suggestedQuestions');
+                this.actionItems = document.getElementById('actionItems');
+                this.conversationGuidance = document.getElementById('conversationGuidance');
+            }
+            
+            attachEventListeners() {
+                this.joinBtn.addEventListener('click', () => this.joinMeeting());
+                this.leaveBtn.addEventListener('click', () => this.leaveMeeting());
+                this.getTranscriptBtn.addEventListener('click', () => this.getTranscript());
+                this.getSummaryBtn.addEventListener('click', () => this.getSummary());
+            }
+            
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.isConnected = true;
+                    this.updateStatus('Connected', 'connected');
+                    console.log('WebSocket connected');
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    this.handleMessage(message);
+                };
+                
+                this.ws.onclose = () => {
+                    this.isConnected = false;
+                    this.updateStatus('Disconnected', 'disconnected');
+                    console.log('WebSocket disconnected');
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+            }
+            
+            updateStatus(text, className) {
+                this.statusEl.textContent = text;
+                this.statusEl.className = `status ${className}`;
+            }
+            
+            sendMessage(message) {
+                if (this.ws && this.isConnected) {
+                    this.ws.send(JSON.stringify(message));
+                }
+            }
+            
+            handleMessage(message) {
+                console.log('Received message:', message);
+                
+                switch (message.type) {
+                    case 'meeting_joined':
+                        this.currentMeetingId = message.meeting_id;
+                        this.joinBtn.disabled = true;
+                        this.leaveBtn.disabled = false;
+                        this.addToTranscript(`✅ Joined meeting: ${message.meeting_id}`, 'success');
+                        break;
+                        
+                    case 'meeting_left':
+                        this.currentMeetingId = null;
+                        this.joinBtn.disabled = false;
+                        this.leaveBtn.disabled = true;
+                        this.addToTranscript('❌ Left meeting', 'info');
+                        break;
+                        
+                    case 'transcription_update':
+                        this.addToTranscript(message.transcript.text, 'transcript');
+                        this.updateInsights(message.analysis);
+                        break;
+                        
+                    case 'transcript':
+                        this.displayFullTranscript(message.data);
+                        break;
+                        
+                    case 'participant_joined':
+                        this.addToTranscript(`👤 ${message.participant.name} joined`, 'info');
+                        break;
+                        
+                    case 'participant_left':
+                        this.addToTranscript(`👤 ${message.participant.name} left`, 'info');
+                        break;
+                }
+            }
+            
+            joinMeeting() {
+                const meetingId = this.meetingIdEl.value.trim();
+                const password = this.meetingPasswordEl.value.trim();
+                
+                if (!meetingId) {
+                    alert('Please enter a meeting ID');
+                    return;
+                }
+                
+                if (!this.isConnected) {
+                    this.connect();
+                    setTimeout(() => this.joinMeeting(), 1000);
+                    return;
+                }
+                
+                this.sendMessage({
+                    type: 'join_meeting',
+                    meeting_id: meetingId,
+                    password: password
+                });
+            }
+            
+            leaveMeeting() {
+                this.sendMessage({
+                    type: 'leave_meeting'
+                });
+            }
+            
+            getTranscript() {
+                this.sendMessage({
+                    type: 'get_transcript'
+                });
+            }
+            
+            getSummary() {
+                if (this.currentMeetingId) {
+                    fetch(`/summary/${this.currentMeetingId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.displaySummary(data);
+                        })
+                        .catch(error => {
+                            console.error('Error getting summary:', error);
+                        });
+                }
+            }
+            
+            addToTranscript(text, type = 'transcript') {
+                const timestamp = new Date().toLocaleTimeString();
+                const div = document.createElement('div');
+                div.className = type;
+                div.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${text}`;
+                this.transcriptContent.appendChild(div);
+                this.transcriptContent.scrollTop = this.transcriptContent.scrollHeight;
+            }
+            
+            displayFullTranscript(transcript) {
+                this.transcriptContent.innerHTML = '';
+                if (transcript.segments) {
+                    transcript.segments.forEach(segment => {
+                        this.addToTranscript(segment.text, 'transcript');
+                    });
+                }
+            }
+            
+            updateInsights(analysis) {
+                if (!analysis) return;
+                
+                if (analysis.important_points && analysis.important_points.length > 0) {
+                    this.updateList(this.importantPoints, analysis.important_points);
+                }
+                
+                if (analysis.suggested_questions && analysis.suggested_questions.length > 0) {
+                    this.updateList(this.suggestedQuestions, analysis.suggested_questions);
+                }
+                
+                if (analysis.action_items && analysis.action_items.length > 0) {
+                    this.updateList(this.actionItems, analysis.action_items);
+                }
+                
+                if (analysis.conversation_guidance && analysis.conversation_guidance.length > 0) {
+                    this.updateList(this.conversationGuidance, analysis.conversation_guidance);
+                }
+            }
+            
+            updateList(listElement, items) {
+                listElement.innerHTML = '';
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    listElement.appendChild(li);
+                });
+            }
+            
+            displaySummary(summary) {
+                if (summary.error) {
+                    alert('Error getting summary: ' + summary.error);
+                    return;
+                }
+                
+                // Create a modal or new section to display the summary
+                const summaryWindow = window.open('', '_blank', 'width=800,height=600');
+                summaryWindow.document.write(`
+                    <html>
+                        <head><title>Meeting Summary</title></head>
+                        <body style="font-family: Arial, sans-serif; padding: 20px;">
+                            <h1>Meeting Summary</h1>
+                            <h2>Executive Summary</h2>
+                            <p>${summary.summary.executive_summary || 'No summary available'}</p>
+                            
+                            <h2>Key Decisions</h2>
+                            <ul>${(summary.summary.key_decisions || []).map(d => `<li>${d}</li>`).join('')}</ul>
+                            
+                            <h2>Action Items</h2>
+                            <ul>${(summary.summary.action_items || []).map(a => `<li>${a}</li>`).join('')}</ul>
+                            
+                            <h2>Topics Discussed</h2>
+                            <ul>${(summary.summary.topics_discussed || []).map(t => `<li>${t}</li>`).join('')}</ul>
+                            
+                            <h2>Next Steps</h2>
+                            <ul>${(summary.summary.next_steps || []).map(n => `<li>${n}</li>`).join('')}</ul>
+                        </body>
+                    </html>
+                `);
+            }
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new MeetingTranscriber();
+        });
+    </script>
+</body>
+</html>

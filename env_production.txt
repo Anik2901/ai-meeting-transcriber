@@ -1,0 +1,41 @@
+# Production Environment Configuration
+# Copy this to .env and fill in your actual credentials
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Zoom Configuration (Get these from Zoom Marketplace)
+ZOOM_API_KEY=your_zoom_api_key_here
+ZOOM_API_SECRET=your_zoom_api_secret_here
+ZOOM_BOT_JID=your_zoom_bot_jid_here
+
+# Application Configuration
+APP_HOST=0.0.0.0
+APP_PORT=8000
+DEBUG=False
+LOG_LEVEL=INFO
+
+# Database Configuration (Optional - for production)
+DATABASE_URL=postgresql://user:password@localhost:5432/meeting_transcriber
+
+# Redis Configuration (Optional - for caching)
+REDIS_URL=redis://localhost:6379/0
+
+# Security Configuration
+SECRET_KEY=your_secret_key_here
+JWT_SECRET_KEY=your_jwt_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+# Webhook Configuration
+WEBHOOK_SECRET=your_webhook_secret_here
+WEBHOOK_URL=https://your-domain.com/webhook/zoom
+
+# Performance Configuration
+MAX_CONCURRENT_MEETINGS=10
+AUDIO_BUFFER_SIZE=30
+TRANSCRIPTION_BATCH_SIZE=3
+
+# Monitoring Configuration
+ENABLE_METRICS=True
+METRICS_PORT=9090

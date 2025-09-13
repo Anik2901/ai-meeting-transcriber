@@ -1,0 +1,16 @@
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Zoom Configuration
+ZOOM_API_KEY=your_zoom_api_key_here
+ZOOM_API_SECRET=your_zoom_api_secret_here
+ZOOM_BOT_JID=your_zoom_bot_jid_here
+
+# Application Configuration
+APP_HOST=0.0.0.0
+APP_PORT=8000
+DEBUG=True
+
+# Webhook Configuration
+WEBHOOK_SECRET=your_webhook_secret_here
+WEBHOOK_URL=https://your-domain.com/webhook/zoom
